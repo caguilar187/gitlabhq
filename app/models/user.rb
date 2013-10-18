@@ -252,10 +252,25 @@ class User < ActiveRecord::Base
                            end
   end
 
+  # Groups user has access to
+  def truely_authorized_groups
+    @truely_authorized_groups ||= begin
+                             group_ids = (groups.pluck(:id) + own_groups.pluck(:id) + truly_authorized_projects.pluck(:namespace_id))
+                             Group.where(id: group_ids).order('namespaces.name ASC')
+                           end
+  end
 
   # Projects user has access to
   def authorized_projects
     @authorized_projects ||= begin
+                               project_ids = (owned_projects.pluck(:id) + groups_projects.pluck(:id) + projects.pluck(:id)).uniq
+                               Project.where(id: project_ids).joins(:namespace).order('namespaces.name ASC')
+                             end
+  end
+
+  # Projects user has access to
+  def truly_authorized_projects
+    @truly_authorized_projects ||= begin
                                project_ids = (owned_projects.pluck(:id) + groups_projects.pluck(:id) + projects.pluck(:id)).uniq
                                Project.where(id: project_ids).joins(:namespace).order('namespaces.name ASC')
                              end

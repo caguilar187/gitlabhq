@@ -9,12 +9,12 @@ class DashboardController < ApplicationController
     # If user needs more - point to Dashboard#projects page
     @projects_limit = 30
 
-    @groups = current_user.authorized_groups.sort_by(&:human_name)
+    @groups = current_user.truly_authorized_groups.sort_by(&:human_name)
     @has_authorized_projects = @projects.count > 0
     @projects_count = @projects.count
     @projects = @projects.limit(@projects_limit)
 
-    @events = Event.in_projects(current_user.authorized_projects.pluck(:id))
+    @events = Event.in_projects(current_user.truly_authorized_projects.pluck(:id))
     @events = @event_filter.apply_filter(@events)
     @events = @events.limit(20).offset(params[:offset] || 0)
 
@@ -32,18 +32,18 @@ class DashboardController < ApplicationController
                 when 'personal' then
                   current_user.namespace.projects
                 when 'joined' then
-                  current_user.authorized_projects.joined(current_user)
+                  current_user.truly_authorized_projects.joined(current_user)
                 when 'owned' then
                   current_user.owned_projects
                 else
-                  current_user.authorized_projects
+                  current_user.truly_authorized_projects
                 end
 
     @projects = @projects.where(namespace_id: Group.find_by_name(params[:group])) if params[:group].present?
     @projects = @projects.includes(:namespace).sorted_by_activity
 
-    @labels = current_user.authorized_projects.tags_on(:labels)
-    @groups = current_user.authorized_groups
+    @labels = current_user.truly_authorized_projects.tags_on(:labels)
+    @groups = current_user.truly_authorized_groups
 
     @projects = @projects.tagged_with(params[:label]) if params[:label].present?
     @projects = @projects.page(params[:page]).per(30)
@@ -72,6 +72,6 @@ class DashboardController < ApplicationController
   protected
 
   def load_projects
-    @projects = current_user.authorized_projects.sorted_by_activity
+    @projects = current_user.truly_authorized_projects.sorted_by_activity
   end
 end
